@@ -1,29 +1,37 @@
 #!/bin/bash
 
-LOG_DIR="/Users/nana/logs"
-APP_LOG_FILE="application.log"
-SYS_LOG_FILE="system.log"
+LOG_DIR="/workspaces/week5_day1/logs"
+ERROR_PATTERNS=("ERROR" "FATAL" "CRITICAL")
+REPORT_FILE="/workspaces/week5_day1/logs/log_analysis_report.txt"
 
-echo "analysing log files"
-echo "===================="
+echo "analysing log files" > "$REPORT_FILE"
+echo "====================" >> "$REPORT_FILE"
 
-echo -e "\nList of log files updated in last 24 hours"
-find "$LOG_DIR" -name "*.log" -mtime -1
+echo -e "\nList of log files updated in last 24 hours" >> "$REPORT_FILE"
+LOG_FILES=$(find "$LOG_DIR" -name "*.log" -mtime -1)
+echo "$LOG_FILES" >> "$REPORT_FILE"
 
-echo -e "\nSearching ERROR logs in application.log file"
-grep "ERROR" "$LOG_DIR/$APP_LOG_FILE"
+for LOG_FILE in $LOG_FILES; do
 
-echo -e "\nNumber of ERROR logs found in application.log"
-grep -c "ERROR" "$LOG_DIR/$APP_LOG_FILE"
+    echo -e "\n" >> "$REPORT_FILE"
+    echo "==================================================" >> "$REPORT_FILE"
+    echo "====================$LOG_FILE====================" >> "$REPORT_FILE"
+    echo "==================================================" >> "$REPORT_FILE"
 
-echo -e "\nNumber of FATAL logs found in application.log"
-grep -c "FATAL" "$LOG_DIR/$APP_LOG_FILE"
+    for PATTERN in "${ERROR_PATTERNS[@]}"; do
 
-echo -e "\nNumber of FATAL logs found in system.log"
-grep -c "FATAL" "$LOG_DIR/$SYS_LOG_FILE"
+        echo -e "\nSearching $PATTERN logs in $LOG_FILE file" >> "$REPORT_FILE"
+        grep "$PATTERN" "$LOG_FILE" >> "$REPORT_FILE" || true
 
-echo -e "\nNumber of CRITICAL logs found in system.log"
-grep -c "CRITICAL" "$LOG_DIR/$SYS_LOG_FILE"
+        echo -e "\nNumber of $PATTERN logs found in $LOG_FILE" >> "$REPORT_FILE"
 
-echo -e "\nCRITICAL logs in system.log file"
-grep "CRITICAL" "$LOG_DIR/$SYS_LOG_FILE"
+        ERROR_COUNT=$(grep -c "$PATTERN" "$LOG_FILE")
+        grep -c "$PATTERN" "$LOG_FILE" >> "$REPORT_FILE" || true
+
+        if [ "$ERROR_COUNT" -gt 10 ]; then
+            echo -e "\nWarning: High number of $PATTERN logs found in $LOG_FILE"
+        fi
+    done
+done
+
+echo -e "\nLog analysis completed and report saved in: $REPORT_FILE"
